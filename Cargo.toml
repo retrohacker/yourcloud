@@ -7,3 +7,5 @@ authors = ["retrohacker <retrohacker@protonmail.com>"]
 uuid = { version = "0.6", features = ["v4"] }
 sha3 = "0.7"
 hex = "0.3"
+time = "0.1"
+fuse = "0.3"
