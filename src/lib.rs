@@ -15,7 +15,7 @@ impl std::fmt::Display for Log {
         for entry in self.log.iter() {
             match *entry {
                 Entry::Init{ref uuid, ref name} => {
-                    res = format!("{}\ninit {} {}", res, uuid, name);
+                    res = format!("{}\ninit {} \"{}\"", res, uuid, name);
                 },
             }
         }
