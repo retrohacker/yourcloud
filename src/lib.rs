@@ -7,7 +7,8 @@ use sha3::{Digest, Sha3_512};
 
 pub enum Entry {
     Init { uuid: String, name: String },
-    Mkdir { time: time::Tm, id: u64, path: String }
+    Mkdir { time: time::Tm, id: u64, path: String },
+    Create { time: time::Tm, id: u64, path: String },
 }
 
 impl std::fmt::Display for Entry {
@@ -18,9 +19,11 @@ impl std::fmt::Display for Entry {
             },
             Entry::Mkdir{ref time, ref id, ref path} => {
                 write!(f, "mkdir {} {} \"{}\"",
-                       time.rfc3339(),
-                       id,
-                       path)
+                       time.rfc3339(), id, path)
+            }
+            Entry::Create {ref time, ref id, ref path} => {
+                write!(f, "create {} {} \"{}\"",
+                       time.rfc3339(), id, path)
             }
         }
     }
@@ -69,6 +72,15 @@ impl Log {
         let id = self.id_gen;
         self.id_gen = self.id_gen + 1;
         self.log.push(Entry::Mkdir {
+            time: time::now_utc(),
+            path: String::from(path),
+            id,
+        });
+    }
+    pub fn create(&mut self, path: &str) {
+        let id = self.id_gen;
+        self.id_gen = self.id_gen + 1;
+        self.log.push(Entry::Create {
             time: time::now_utc(),
             path: String::from(path),
             id,
