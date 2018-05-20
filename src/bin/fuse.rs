@@ -31,18 +31,11 @@ impl fuse::Filesystem for FileSystem {
     }
     fn getattr(&mut self,req: &Request,ino: u64,reply: ReplyAttr) {
         println!("getattr");
-        if ino != 1 {
-            reply.error(2);
-            return ();
-        }
         let dir = self.log.get(ino).unwrap();
-        println!("{}", dir);
-        println!("{:?}", req);
-        println!("{:?}", ino);
         match dir {
             Entry::Mkdir{ time, id, path } => {
                 let t = time.to_timespec();
-                reply.attr(&time::get_time(), &FileAttr {
+                return reply.attr(&time::get_time(), &FileAttr {
                     ino: ino,
                     size: 0,
                     blocks: 0,
@@ -60,9 +53,10 @@ impl fuse::Filesystem for FileSystem {
                 });
             },
             _ => {
-                reply.error(14);
+                return reply.error(14);
             }
         }
+        return reply.error(2);
     }
     fn access(
         &mut self,
@@ -74,17 +68,38 @@ impl fuse::Filesystem for FileSystem {
         println!("access");
         reply.ok();
     }
-    fn destroy(&mut self,_req: &Request) {
-        println!("destroy");
+    fn opendir(
+        &mut self,
+        _req: &Request,
+        ino: u64,
+        flags: u32,
+        reply: ReplyOpen
+    ) {
+        println!("opendir");
+        println!("ino: {}", ino);
+        let dir = self.log.get(ino).unwrap();
+        println!("{}", dir);
+        match dir {
+            Entry::Mkdir{ time, id, path } => {
+                return reply.opened(0, flags);
+            },
+            _ => {
+                return reply.error(14);
+            }
+        }
+        return reply.error(2);
     }
     fn lookup(
         &mut self,
         _req: &Request,
         _parent: u64,
         _name: &OsStr,
-        reply: ReplyEntry
+        _reply: ReplyEntry
     ) {
         println!("lookup");
+    }
+    fn destroy(&mut self,_req: &Request) {
+        println!("destroy");
     }
     fn forget(&mut self,_req: &Request,_ino: u64,_nlookup: u64) {
         println!("forget");
@@ -104,11 +119,11 @@ impl fuse::Filesystem for FileSystem {
         _chgtime: Option<Timespec>,
         _bkuptime: Option<Timespec>,
         _flags: Option<u32>,
-        reply: ReplyAttr
+        _reply: ReplyAttr
     ) {
         println!("setattr");
     }
-    fn readlink(&mut self,_req: &Request,_ino: u64,reply: ReplyData) {
+    fn readlink(&mut self,_req: &Request,_ino: u64,_reply: ReplyData) {
         println!("readlink");
     }
     fn mknod(
@@ -118,7 +133,7 @@ impl fuse::Filesystem for FileSystem {
         _name: &OsStr,
         _mode: u32,
         _rdev: u32,
-        reply: ReplyEntry
+        _reply: ReplyEntry
     ) {
         println!("mknod");
     }
@@ -128,7 +143,7 @@ impl fuse::Filesystem for FileSystem {
         _parent: u64,
         _name: &OsStr,
         _mode: u32,
-        reply: ReplyEntry
+        _reply: ReplyEntry
     ) {
         println!("mkdir");
     }
@@ -137,7 +152,7 @@ impl fuse::Filesystem for FileSystem {
         _req: &Request,
         _parent: u64,
         _name: &OsStr,
-        reply: ReplyEmpty
+        _reply: ReplyEmpty
     ) {
         println!("unlink");
     }
@@ -146,7 +161,7 @@ impl fuse::Filesystem for FileSystem {
         _req: &Request,
         _parent: u64,
         _name: &OsStr,
-        reply: ReplyEmpty
+        _reply: ReplyEmpty
     ) {
         println!("rmdir");
     }
@@ -156,7 +171,7 @@ impl fuse::Filesystem for FileSystem {
         _parent: u64,
         _name: &OsStr,
         _link: &Path,
-        reply: ReplyEntry
+        _reply: ReplyEntry
     ) {
         println!("symlink");
     }
@@ -167,7 +182,7 @@ impl fuse::Filesystem for FileSystem {
         _name: &OsStr,
         _newparent: u64,
         _newname: &OsStr,
-        reply: ReplyEmpty
+        _reply: ReplyEmpty
     ) {
         println!("rename");
     }
@@ -177,11 +192,11 @@ impl fuse::Filesystem for FileSystem {
         _ino: u64,
         _newparent: u64,
         _newname: &OsStr,
-        reply: ReplyEntry
+        _reply: ReplyEntry
     ) {
         println!("link");
     }
-    fn open(&mut self,_req: &Request,_ino: u64,_flags: u32,reply: ReplyOpen) {
+    fn open(&mut self,_req: &Request,_ino: u64,_flags: u32,_reply: ReplyOpen) {
         println!("open");
     }
     fn read(
@@ -191,7 +206,7 @@ impl fuse::Filesystem for FileSystem {
         _fh: u64,
         _offset: i64,
         _size: u32,
-        reply: ReplyData
+        _reply: ReplyData
     ) {
         println!("read");
     }
@@ -203,7 +218,7 @@ impl fuse::Filesystem for FileSystem {
         _offset: i64,
         _data: &[u8],
         _flags: u32,
-        reply: ReplyWrite
+        _reply: ReplyWrite
     ) {
         println!("write");
     }
@@ -213,7 +228,7 @@ impl fuse::Filesystem for FileSystem {
         _ino: u64,
         _fh: u64,
         _lock_owner: u64,
-        reply: ReplyEmpty
+        _reply: ReplyEmpty
     ) {
         println!("flush");
     }
@@ -225,7 +240,7 @@ impl fuse::Filesystem for FileSystem {
         _flags: u32,
         _lock_owner: u64,
         _flush: bool,
-        reply: ReplyEmpty
+        _reply: ReplyEmpty
     ) {
         println!("release");
     }
@@ -235,18 +250,9 @@ impl fuse::Filesystem for FileSystem {
         _ino: u64,
         _fh: u64,
         _datasync: bool,
-        reply: ReplyEmpty
+        _reply: ReplyEmpty
     ) {
         println!("fsync");
-    }
-    fn opendir(
-        &mut self,
-        _req: &Request,
-        _ino: u64,
-        _flags: u32,
-        reply: ReplyOpen
-    ) {
-        println!("opendir");
     }
     fn readdir(
         &mut self,
@@ -254,7 +260,7 @@ impl fuse::Filesystem for FileSystem {
         _ino: u64,
         _fh: u64,
         _offset: i64,
-        reply: ReplyDirectory
+        _reply: ReplyDirectory
     ) {
         println!("readdir");
     }
@@ -264,7 +270,7 @@ impl fuse::Filesystem for FileSystem {
         _ino: u64,
         _fh: u64,
         _flags: u32,
-        reply: ReplyEmpty
+        _reply: ReplyEmpty
     ) {
         println!("releasedir");
     }
@@ -274,11 +280,11 @@ impl fuse::Filesystem for FileSystem {
         _ino: u64,
         _fh: u64,
         _datasync: bool,
-        reply: ReplyEmpty
+        _reply: ReplyEmpty
     ) {
         println!("fsyncdir");
     }
-    fn statfs(&mut self,_req: &Request,_ino: u64,reply: ReplyStatfs) {
+    fn statfs(&mut self,_req: &Request,_ino: u64,_reply: ReplyStatfs) {
         println!("statfs");
     }
     fn setxattr(
@@ -289,7 +295,7 @@ impl fuse::Filesystem for FileSystem {
         _value: &[u8],
         _flags: u32,
         _position: u32,
-        reply: ReplyEmpty
+        _reply: ReplyEmpty
     ) {
         println!("setxattr");
     }
@@ -299,7 +305,7 @@ impl fuse::Filesystem for FileSystem {
         _ino: u64,
         _name: &OsStr,
         _size: u32,
-        reply: ReplyXattr
+        _reply: ReplyXattr
     ) {
         println!("getxattr");
     }
@@ -308,7 +314,7 @@ impl fuse::Filesystem for FileSystem {
         _req: &Request,
         _ino: u64,
         _size: u32,
-        reply: ReplyXattr
+        _reply: ReplyXattr
     ) {
         println!("listxattr");
     }
@@ -317,7 +323,7 @@ impl fuse::Filesystem for FileSystem {
         _req: &Request,
         _ino: u64,
         _name: &OsStr,
-        reply: ReplyEmpty
+        _reply: ReplyEmpty
     ) {
         println!("removexattr");
     }
@@ -328,7 +334,7 @@ impl fuse::Filesystem for FileSystem {
         _name: &OsStr,
         _mode: u32,
         _flags: u32,
-        reply: ReplyCreate
+        _reply: ReplyCreate
     ) {
         println!("create");
     }
@@ -342,7 +348,7 @@ impl fuse::Filesystem for FileSystem {
         _end: u64,
         _typ: u32,
         _pid: u32,
-        reply: ReplyLock
+        _reply: ReplyLock
     ) {
         println!("getlk");
     }
@@ -357,7 +363,7 @@ impl fuse::Filesystem for FileSystem {
         _typ: u32,
         _pid: u32,
         _sleep: bool,
-        reply: ReplyEmpty
+        _reply: ReplyEmpty
     ) {
         println!("setlk");
     }
@@ -367,7 +373,7 @@ impl fuse::Filesystem for FileSystem {
         _ino: u64,
         _blocksize: u32,
         _idx: u64,
-        reply: ReplyBmap
+        _reply: ReplyBmap
     ) {
         println!("bmap");
     }
