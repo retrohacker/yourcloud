@@ -64,6 +64,16 @@ impl fuse::Filesystem for FileSystem {
             }
         }
     }
+    fn access(
+        &mut self,
+        _req: &Request,
+        _ino: u64,
+        _mask: u32,
+        reply: ReplyEmpty
+    ) {
+        println!("access");
+        reply.ok();
+    }
     fn destroy(&mut self,_req: &Request) {
         println!("destroy");
     }
@@ -310,15 +320,6 @@ impl fuse::Filesystem for FileSystem {
         reply: ReplyEmpty
     ) {
         println!("removexattr");
-    }
-    fn access(
-        &mut self,
-        _req: &Request,
-        _ino: u64,
-        _mask: u32,
-        reply: ReplyEmpty
-    ) {
-        println!("access");
     }
     fn create(
         &mut self,
